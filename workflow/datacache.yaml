@@ -117,7 +117,7 @@ spec:
           parameters: *id003
   - name: precheck
     container:
-      image: fpaparoni/composer-tools:2.0.0
+      image: fpaparoni/composer-tools:2.0.1
       command:
       - /scripts/precheck.sh
   - name: generate-report

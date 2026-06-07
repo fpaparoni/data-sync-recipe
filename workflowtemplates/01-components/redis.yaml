@@ -1,0 +1,78 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: redis-component
+  labels:
+    composer.io/component: redis
+    composer.io/version: '1.0'
+spec:
+  templates:
+  - name: install
+    serviceAccountName: composer-workflow-sa
+    inputs:
+      parameters:
+      - name: namespace
+        default: redis
+      - name: version
+        default: '7.2.5-debian-12-r0'
+      - name: password
+        default: redis-secret
+      - name: storage
+        default: 2Gi
+      - name: maxmemory
+        default: 256mb
+    container:
+      image: fpaparoni/composer-tools:2.0.1
+      command:
+      - /scripts/01-components/redis/01-install.sh
+      env:
+      - name: NAMESPACE
+        value: '{{inputs.parameters.namespace}}'
+      - name: VERSION
+        value: '{{inputs.parameters.version}}'
+      - name: PASSWORD
+        value: '{{inputs.parameters.password}}'
+      - name: STORAGE
+        value: '{{inputs.parameters.storage}}'
+      - name: MAXMEMORY
+        value: '{{inputs.parameters.maxmemory}}'
+  - name: verify
+    serviceAccountName: composer-workflow-sa
+    inputs:
+      parameters:
+      - name: namespace
+        default: redis
+      - name: password
+        default: redis-secret
+    retryStrategy:
+      limit: '3'
+      retryPolicy: OnFailure
+      backoff:
+        duration: 30s
+        factor: '2'
+    container:
+      image: fpaparoni/composer-tools:2.0.1
+      command:
+      - /scripts/01-components/redis/02-verify.sh
+      env:
+      - name: NAMESPACE
+        value: '{{inputs.parameters.namespace}}'
+      - name: PASSWORD
+        value: '{{inputs.parameters.password}}'
+  - name: bootstrap
+    serviceAccountName: composer-workflow-sa
+    inputs:
+      parameters:
+      - name: namespace
+        default: redis
+      - name: password
+        default: redis-secret
+    container:
+      image: fpaparoni/composer-tools:2.0.1
+      command:
+      - /scripts/01-components/redis/03-bootstrap.sh
+      env:
+      - name: NAMESPACE
+        value: '{{inputs.parameters.namespace}}'
+      - name: PASSWORD
+        value: '{{inputs.parameters.password}}'

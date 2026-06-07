@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: postgres-redis-cache-integration
+  labels:
+    composer.io/integration: postgres-redis-cache
+    composer.io/type: cache-sync
+    composer.io/version: '1.0'
+spec:
+  templates:
+  - name: configure
+    serviceAccountName: composer-workflow-sa
+    inputs:
+      parameters:
+      - name: namespace
+        default: postgres-redis-cache-integration
+      - name: pgHost
+        default: postgresql.postgres.svc.cluster.local
+      - name: pgDb
+        default: postgres
+      - name: pgUser
+        default: postgres
+      - name: pgPassword
+        default: postgres-secret
+      - name: redisHost
+        default: redis-master.redis.svc.cluster.local
+      - name: redisPassword
+        default: redis-secret
+      - name: syncInterval
+        default: 10
+      - name: image
+        default: fpaparoni/postgres-redis-sync:1.0.1
+    container:
+      image: fpaparoni/composer-tools:2.0.1
+      command:
+      - /scripts/02-integrations/postgres-redis-cache/integrate.sh
+      env:
+      - name: NAMESPACE
+        value: '{{inputs.parameters.namespace}}'
+      - name: PG_HOST
+        value: '{{inputs.parameters.pgHost}}'
+      - name: PG_DB
+        value: '{{inputs.parameters.pgDb}}'
+      - name: PG_USER
+        value: '{{inputs.parameters.pgUser}}'
+      - name: PG_PASSWORD
+        value: '{{inputs.parameters.pgPassword}}'
+      - name: REDIS_HOST
+        value: '{{inputs.parameters.redisHost}}'
+      - name: REDIS_PASSWORD
+        value: '{{inputs.parameters.redisPassword}}'
+      - name: SYNC_INTERVAL
+        value: '{{inputs.parameters.syncInterval}}'
+      - name: IMAGE
+        value: '{{inputs.parameters.image}}'

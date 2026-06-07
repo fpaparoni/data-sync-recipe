@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: postgres-component
+  labels:
+    composer.io/component: postgres
+    composer.io/version: '1.0'
+spec:
+  templates:
+  - name: install
+    serviceAccountName: composer-workflow-sa
+    inputs:
+      parameters:
+      - name: namespace
+        default: postgres
+      - name: version
+        default: '15.6.0-debian-12-r0'
+      - name: password
+        default: postgres-secret
+      - name: storage
+        default: 5Gi
+    container:
+      image: fpaparoni/composer-tools:2.0.1
+      command:
+      - /scripts/01-components/postgres/01-install.sh
+      env:
+      - name: NAMESPACE
+        value: '{{inputs.parameters.namespace}}'
+      - name: VERSION
+        value: '{{inputs.parameters.version}}'
+      - name: PASSWORD
+        value: '{{inputs.parameters.password}}'
+      - name: STORAGE
+        value: '{{inputs.parameters.storage}}'
+  - name: verify
+    serviceAccountName: composer-workflow-sa
+    inputs:
+      parameters:
+      - name: namespace
+        default: postgres
+      - name: password
+        default: postgres-secret
+    retryStrategy:
+      limit: '3'
+      retryPolicy: OnFailure
+      backoff:
+        duration: 30s
+        factor: '2'
+    container:
+      image: fpaparoni/composer-tools:2.0.1
+      command:
+      - /scripts/01-components/postgres/02-verify.sh
+      env:
+      - name: NAMESPACE
+        value: '{{inputs.parameters.namespace}}'
+      - name: PASSWORD
+        value: '{{inputs.parameters.password}}'
+  - name: bootstrap
+    serviceAccountName: composer-workflow-sa
+    inputs:
+      parameters:
+      - name: namespace
+        default: postgres
+      - name: password
+        default: postgres-secret
+    container:
+      image: fpaparoni/composer-tools:2.0.1
+      command:
+      - /scripts/01-components/postgres/03-bootstrap.sh
+      env:
+      - name: NAMESPACE
+        value: '{{inputs.parameters.namespace}}'
+      - name: PASSWORD
+        value: '{{inputs.parameters.password}}'

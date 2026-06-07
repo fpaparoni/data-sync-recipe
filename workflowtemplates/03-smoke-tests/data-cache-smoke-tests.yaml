@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: data-cache-smoke-tests
+  labels:
+    composer.io/recipe: data-cache
+    composer.io/role: smoke-tests
+    composer.io/version: '1.0'
+spec:
+  templates:
+  - name: run-all
+    serviceAccountName: composer-workflow-sa
+    inputs:
+      parameters:
+      - name: postgresNamespace
+        default: postgres
+      - name: redisNamespace
+        default: redis
+      - name: pgUser
+        default: postgres
+      - name: pgPassword
+        default: postgres-secret
+      - name: pgDatabase
+        default: postgres
+      - name: redisPassword
+        default: redis-secret
+    container:
+      image: fpaparoni/composer-tools:2.0.1
+      command:
+      - /scripts/03-smoke-tests/data-cache.sh
+      env:
+      - name: POSTGRES_NAMESPACE
+        value: '{{inputs.parameters.postgresNamespace}}'
+      - name: REDIS_NAMESPACE
+        value: '{{inputs.parameters.redisNamespace}}'
+      - name: PG_USER
+        value: '{{inputs.parameters.pgUser}}'
+      - name: PG_PASSWORD
+        value: '{{inputs.parameters.pgPassword}}'
+      - name: PG_DATABASE
+        value: '{{inputs.parameters.pgDatabase}}'
+      - name: REDIS_PASSWORD
+        value: '{{inputs.parameters.redisPassword}}'

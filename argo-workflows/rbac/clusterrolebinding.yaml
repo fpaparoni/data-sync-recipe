@@ -1,0 +1,103 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: composer-workflow-role
+  labels:
+    composer.io/managed: "true"
+
+rules:
+
+# -------------------------------------------------
+# CORE KUBERNETES RESOURCES (READ + WRITE EVERYTHING)
+# -------------------------------------------------
+- apiGroups: [""]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# APPS (Deployments, StatefulSets, etc.)
+# -------------------------------------------------
+- apiGroups: ["apps"]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# NETWORKING (Ingress, NetworkPolicy)
+# -------------------------------------------------
+- apiGroups: ["networking.k8s.io"]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# AUTOSCALING (HPA)
+# -------------------------------------------------
+- apiGroups: ["autoscaling"]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# BATCH (Jobs / Helm hooks)
+# -------------------------------------------------
+- apiGroups: ["batch"]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# POLICY (PDB → IL TUO ERRORE ATTUALE)
+# -------------------------------------------------
+- apiGroups: ["policy"]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# RBAC (ServiceAccounts, Roles, bindings)
+# -------------------------------------------------
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# CRDs (Helm charts / operators)
+# -------------------------------------------------
+- apiGroups: ["apiextensions.k8s.io"]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# ARGO WORKFLOWS (introspection + reporting)
+# -------------------------------------------------
+- apiGroups: ["argoproj.io"]
+  resources:
+    - "*"
+  verbs: ["*"]
+
+# -------------------------------------------------
+# EXTENDED CORE (alcuni cluster richiedono esplicitamente scope separato)
+# -------------------------------------------------
+- apiGroups: ["coordination.k8s.io"]
+  resources:
+    - "*"
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: composer-workflow-rolebinding
+  labels:
+    composer.io/managed: "true"
+subjects:
+  - kind: ServiceAccount
+    name: composer-workflow-sa
+    namespace: argo-workflows
+roleRef:
+  kind: ClusterRole
+  name: composer-workflow-role
+  apiGroup: rbac.authorization.k8s.io

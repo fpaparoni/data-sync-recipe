@@ -1,0 +1,136 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: data-cache-
+  namespace: argo-workflows
+  labels:
+    composer.io/recipe: data-cache
+    composer.io/version: 0.1.0
+  annotations:
+    composer.io/description: Data Cache Platform — PostgreSQL with Redis as a synchronized
+      cache layer
+    composer.io/components: postgres,redis
+    composer.io/integrations: postgres-redis-cache
+spec:
+  serviceAccountName: composer-workflow-sa
+  entrypoint: recipe-data-cache
+  onExit: generate-report
+  arguments:
+    parameters:
+    - name: recipe-name
+      value: data-cache
+    - name: recipe-description
+      value: Data Cache Platform — PostgreSQL with Redis as a synchronized cache layer
+  templates:
+  - name: recipe-data-cache
+    dag:
+      failFast: false
+      tasks:
+      - name: precheck
+        template: precheck
+      - name: lifecycle-postgres
+        template: lifecycle-postgres
+        dependencies:
+        - precheck
+      - name: lifecycle-redis
+        template: lifecycle-redis
+        dependencies:
+        - precheck
+      - name: configure-postgres-redis-cache
+        templateRef:
+          name: postgres-redis-cache-integration
+          template: configure
+          clusterScope: true
+        dependencies:
+        - lifecycle-postgres
+        - lifecycle-redis
+      - name: smoke-test-cache-hit-miss
+        templateRef:
+          name: data-cache-smoke-tests
+          template: run-all
+          clusterScope: true
+        dependencies:
+        - configure-postgres-redis-cache
+  - name: lifecycle-postgres
+    steps:
+    - - name: install
+        templateRef:
+          name: postgres-component
+          template: install
+          clusterScope: true
+        arguments:
+          parameters: &id002
+          - name: namespace
+            value: postgres
+          - name: version
+            value: 15.6.0-debian-12-r0
+          - name: password
+            value: postgres-secret
+          - name: storage
+            value: 5Gi
+    - - name: verify
+        templateRef:
+          name: postgres-component
+          template: verify
+          clusterScope: true
+        arguments:
+          parameters: *id002
+    - - name: bootstrap
+        templateRef:
+          name: postgres-component
+          template: bootstrap
+          clusterScope: true
+        arguments:
+          parameters: *id002
+  - name: lifecycle-redis
+    steps:
+    - - name: install
+        templateRef:
+          name: redis-component
+          template: install
+          clusterScope: true
+        arguments:
+          parameters: &id003
+          - name: namespace
+            value: redis
+          - name: version
+            value: 7.2.5-debian-12-r0
+          - name: password
+            value: redis-secret
+          - name: storage
+            value: 2Gi
+          - name: maxmemory
+            value: 256mb
+    - - name: verify
+        templateRef:
+          name: redis-component
+          template: verify
+          clusterScope: true
+        arguments:
+          parameters: *id003
+    - - name: bootstrap
+        templateRef:
+          name: redis-component
+          template: bootstrap
+          clusterScope: true
+        arguments:
+          parameters: *id003
+  - name: precheck
+    container:
+      image: fpaparoni/composer-tools:2.0.0
+      command:
+      - /scripts/precheck.sh
+  - name: generate-report
+    container:
+      image: fpaparoni/composer-tools:1.1.4
+      command:
+      - /scripts/report.sh
+      env:
+      - name: RECIPE
+        value: '{{workflow.parameters.recipe-name}}'
+      - name: WORKFLOW
+        value: '{{workflow.name}}'
+      - name: NAMESPACE
+        value: '{{workflow.namespace}}'
+      - name: STATUS
+        value: '{{workflow.status}}'

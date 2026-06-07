@@ -5,7 +5,7 @@
 > data cache as a composable, declarative recipe.
 
 This repository is the companion code for the article
-**"The Missing Primitive: Orchestrating Cloud-Native Stacks Beyond GitOps"**.
+[**The Missing Primitive: Orchestrating Cloud-Native Stacks Beyond GitOps**](https://medium.com/@fpaparoni/the-missing-primitive-orchestrating-cloud-native-stacks-beyond-gitops-16acd57956c2).
 
 The core idea: Helm, ArgoCD, Flux and Terraform are each excellent at what they do,
 but none of them can express a *recipe* — a multi-step, procedural workflow that
